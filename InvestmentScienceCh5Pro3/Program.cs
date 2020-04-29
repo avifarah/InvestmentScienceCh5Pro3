@@ -36,7 +36,8 @@ namespace InvestmentScienceCh5Pro3
 		/// <param name="xs">list of ProjCount boolean (indicating fund / don't fund)</param>
 		/// <param name="cs">Cost of projects</param>
 		/// <returns>True: Can be funded, False: Cannot be funded</returns>
-		private static readonly Func<IEnumerable<bool>, List<int>, int> Total = (xs, cs) => xs.Zip(cs, (x, c) => x ? c : 0).Aggregate(0, (a, c) => a += c);
+		private static readonly Func<IEnumerable<bool>, List<int>, int> Total =
+			(xs, cs) => xs.Zip(cs, (x, c) => x ? c : 0).Aggregate(0, (a, c) => a += c);
 
 		/// <summary>The constraints in funding the projects</summary>
 		private static readonly List<Func<IEnumerable<bool>, bool>> Constraints = new List<Func<IEnumerable<bool>, bool>> {
@@ -44,19 +45,22 @@ namespace InvestmentScienceCh5Pro3
 			// CostYr1 is negative and hence the negative Total(..)
 			xs => -Total(xs, CostYr1) <= Budget,
 
-			// Constraint 2: Second year's total cost must be within budget + last year's left over budget reinvested at 10% interest
-			// so Total cost for year 2 = Budget + 1.1 * (Budget - year1's total)
-			//							= 2.1 * Budget - 1.1 * Total(xs, CostYr1)
+			// Constraint 2: Second year's total cost must be within budget + last year's left over budget reinvested at
+			// 10% interest. so Total cost for year 2
+			//		= Budget + 1.1 * (Budget - year1's total)
+			//		= 2.1 * Budget - 1.1 * Total(xs, CostYr1)
 			// CostYr1 and CostYr2 is negative and hence the negative Total(..)'s
 			xs => -Total(xs, CostYr2) <= 2.1 * Budget - 1.1 * (-Total(xs, CostYr1))
 		};
 
 		/// <summary>The aggregation of the two constraints</summary>
-		private static readonly Func<int, bool> Constraint = funded => Constraints.Aggregate(true, (a, con) => a && con(FundedToBoolArray(funded)));
+		private static readonly Func<int, bool> Constraint =
+			funded => Constraints.Aggregate(true, (a, con) => a && con(FundedToBoolArray(funded)));
 
 		/// <summary>Boolean array of funded projects, unpacked into a set, IEnumerable</summary>
 		/// <param name="x">The numeric id of funded projects</param>
-		private static readonly Func<int, IEnumerable<bool>> FundedToBoolArray = x => Enumerable.Range(0, ProjCount).Select(i => (x & (1 << i)) == (1 << i));
+		private static readonly Func<int, IEnumerable<bool>> FundedToBoolArray =
+			x => Enumerable.Range(0, ProjCount).Select(i => (x & (1 << i)) == (1 << i));
 
 		private static readonly Stack<TrackingFrame> FundedStack = new Stack<TrackingFrame>();
 		private static List<TrackingFrame> _maxNpv = new List<TrackingFrame>();
@@ -106,8 +110,10 @@ namespace InvestmentScienceCh5Pro3
 			public override string ToString()
 			{
 				var fundedBits = Convert.ToString(Funded, 2);
-				fundedBits = new string(Enumerable.Reverse(fundedBits.ToCharArray()).ToArray()) + new string('0', ProjCount - fundedBits.Length);
+				fundedBits = new string(Enumerable.Reverse(fundedBits.ToCharArray()).ToArray())
+				             + new string('0', ProjCount - fundedBits.Length);
 				var fundedProjects = string.Join(", ", fundedBits.ToCharArray());
+
 				return $"Funded projects: {fundedProjects}"
 				       + $"  /  CostYr1: {Total(FundedToBoolArray(Funded), CostYr1),4}"
 				       + $"  /  CostYr2: {Total(FundedToBoolArray(Funded), CostYr2),4}"
