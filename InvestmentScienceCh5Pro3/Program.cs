@@ -111,14 +111,21 @@ namespace InvestmentScienceCh5Pro3
 			{
 				var fundedBits = Convert.ToString(Funded, 2);
 				fundedBits = new string(Enumerable.Reverse(fundedBits.ToCharArray()).ToArray())
-				             + new string('0', ProjCount - fundedBits.Length);
-				var fundedProjects = string.Join(", ", fundedBits.ToCharArray());
+							 + new string('0', ProjCount - fundedBits.Length);
+				var fundedProjects = string.Join(", ", fundedBits.ToCharArray().Select(x => $"{x,2}"));
 
 				return $"Funded projects: {fundedProjects}"
-				       + $"  /  CostYr1: {Total(FundedToBoolArray(Funded), CostYr1),4}"
-				       + $"  /  CostYr2: {Total(FundedToBoolArray(Funded), CostYr2),4}"
-				       + $"  /  NPV: {Total(FundedToBoolArray(Funded), Npv),4}";
+					   + $"  /  {Total(FundedToBoolArray(Funded), CostYr1),15}"
+					   + $"  /  {Total(FundedToBoolArray(Funded), CostYr2),15}"
+					   + $"  /  {Total(FundedToBoolArray(Funded), Npv),9}";
 			}
+
+			public static string Header() => $"Funded proj inx: {string.Join(", ", Enumerable.Range(0, ProjCount).Select(x => $"{x,2}"))}"
+			  + "  /  Total cost Yr 1"
+			  + "  /  Total cost Yr 2"
+			  + "  /  Total NPV"
+			  + $"{Environment.NewLine}"
+			  + $"{new string('.', "Funded projects: ".Length + (4 * ProjCount - 2) + 54)}";
 		}
 
 		/// <summary>
@@ -225,6 +232,10 @@ namespace InvestmentScienceCh5Pro3
 				}
 			}
 
+			// At this point it is impossible for having no funded project
+			// If none of the projects were funded then we would have caught that condition
+			// during the quest to fund the first project!
+			Console.WriteLine(TrackingFrame.Header());
 			foreach (var fr in _maxNpv)
 				Console.WriteLine(fr.ToString());
 		}
