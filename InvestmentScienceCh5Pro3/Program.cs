@@ -62,7 +62,6 @@ namespace InvestmentScienceCh5Pro3
 		private static readonly Func<int, IEnumerable<bool>> FundedToBoolArray =
 			x => Enumerable.Range(0, ProjCount).Select(i => (x & (1 << i)) == (1 << i));
 
-		private static readonly Stack<TrackingFrame> FundedStack = new Stack<TrackingFrame>();
 		private static List<TrackingFrame> _maxNpv = new List<TrackingFrame>();
 		private static readonly HashSet<int> Seen = new HashSet<int>();
 
@@ -84,28 +83,10 @@ namespace InvestmentScienceCh5Pro3
 
 		private readonly struct TrackingFrame
 		{
-			/// <summary>Level within the stack.  This information is not strictly needed, its a nice to have though</summary>
-			public int Level { get; }
-
-			/// <summary>The current project index to be added, a value [0..ProjCount)</summary>
-			public int ProjInx { get; }
-
 			/// <summary>A numeric representation of funded projects (cumulative).  A value [0..1111111]</summary>
 			public int Funded { get; }
 
-			public TrackingFrame(int level, int projInx, int funded) : this()
-			{
-				Level = level;
-				ProjInx = projInx;
-				Funded = funded;
-			}
-
-			public void Deconstruct(out int level, out int projInx, out int funded)
-			{
-				level = Level;
-				projInx = ProjInx;
-				funded = Funded;
-			}
+			public TrackingFrame(int funded) : this() => Funded = funded;
 
 			public override string ToString()
 			{
@@ -143,93 +124,23 @@ namespace InvestmentScienceCh5Pro3
 		///			Level	- index in the sack where we will add the next project
 		///			ProjInx	- the index of the project that we will add if it meets the constraints
 		///			Funded	- All the projects that are funded
-		/// 
-		/// Algorithm:
-		///		Add project to a stack to the point that the last project if added will fail the
-		///		constraints. At which point update the projectInx of the last project successfully
-		///		added.  When done with all the projects in level n of the stack rewind the stack one
-		///		level and repeat the trial of projects.
-		///
-		///		Pseudo-code of algorithm:
-		///		-------------------------
-		///		Add first project to a stack (project index projInx) -- frame 0
-		///		add project[projInx] to max-npv-list
-		///		while
-		///			update projInx
-		///			if cannot update stack any further then we are done
-		///			else if projInx exceeds max projects
-		///				unwind stack by one level
-		///				set projInx to last frame added projInx
-		///			else if adding project[projInx] meets constraints
-		///				if projInx was checked before then skip
-		///				else
-		///					add project[projInx] to stack
-		///					update max-npv-list
-		///					add all projectInx in the stack to a seen-list
 		/// </summary>
 		/// <param name="args"></param>
 		static void Main(string[] args)
 		{
-			// Tracking structure.
-			TrackingFrame frame = new TrackingFrame();
-
-			// Populate the first frame and stack 0
 			var level = 0;
-			var firstInx = 0;
+
+			// Skip projInx 0
+			TryNextZeroOneDepth(level, 1, 0, new TrackingFrame(0));
+
 			for (var pInx = 0; pInx < ProjCount; ++pInx)
 			{
-				frame = new TrackingFrame(level, pInx, ProjIds[pInx]);
+				var frame = new TrackingFrame(ProjIds[pInx]);
 				if (!Constraint(frame.Funded)) continue;
-
-				FundedStack.Push(frame);
 				MaxNpv(frame);
 				Seen.Add(frame.Funded);
-				firstInx = pInx;
-				break;
-			}
 
-			// If we could not populate any frame then we cannot fund any project
-			if (FundedStack.Count == 0)
-			{
-				Console.WriteLine("Cannot fund any project");
-				return;
-			}
-
-			var prX = frame.ProjInx;            // Project Index
-			for (; ; )
-			{
-				++prX;
-
-				// Did we run out of projects to add for this level of the stack
-				if (prX >= ProjCount)
-				{
-					if (FundedStack.Count != 0) FundedStack.Pop();
-
-					// We ran out of frames.  We are done.
-					if (FundedStack.Count == 0)
-					{
-						++firstInx;
-						if (firstInx == ProjCount) break;
-						frame = new TrackingFrame(level, firstInx, ProjIds[firstInx]);
-					}
-					else
-					{
-						frame = FundedStack.Peek();
-					}
-					prX = frame.ProjInx;
-					if (prX == ProjCount) break;
-					continue;
-				}
-
-				// Add another node to the stack
-				var nFr = new TrackingFrame(frame.Level + 1, prX, frame.Funded | ProjIds[prX]);
-				if (!Seen.Contains(nFr.Funded) && Constraint(nFr.Funded))
-				{
-					frame = nFr;
-					FundedStack.Push(frame);
-					MaxNpv(frame);
-					Seen.Add(frame.Funded);
-				}
+				TryNextZeroOneDepth(level, pInx + 1, frame.Funded, frame);
 			}
 
 			// At this point it is impossible for having no funded project
@@ -238,6 +149,28 @@ namespace InvestmentScienceCh5Pro3
 			Console.WriteLine(TrackingFrame.Header());
 			foreach (var fr in _maxNpv)
 				Console.WriteLine(fr.ToString());
+		}
+
+		private static void TryNextZeroOneDepth(int level, int projInx, int funded, TrackingFrame parentFrame)
+		{
+			if (projInx + 1 >= ProjCount) return;
+
+			++level;
+
+			// Skip funding projInx project
+			TryNextZeroOneDepth(level, projInx + 1, funded, parentFrame);
+
+			for (var prX = projInx + 1; prX < ProjCount; ++prX)
+			{
+				var frame = new TrackingFrame(funded | ProjIds[prX]);
+				funded = frame.Funded;
+				if (Seen.Contains(frame.Funded) || !Constraint(frame.Funded)) continue;
+
+				MaxNpv(frame);
+				Seen.Add(frame.Funded);
+
+				TryNextZeroOneDepth(level, prX + 1, funded, frame);
+			}
 		}
 	}
 }
