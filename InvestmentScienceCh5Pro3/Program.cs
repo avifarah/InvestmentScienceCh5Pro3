@@ -151,6 +151,24 @@ namespace InvestmentScienceCh5Pro3
 				Console.WriteLine(fr.ToString());
 		}
 
+		/// <summary>
+		/// While reviewing the code I became concerned (for no good reason) that the logic is
+		/// flawed.  My issue was with the fact that I was adding projects to be funded
+		/// <code>
+		/// 		var funded = parentFrame.Funded;
+		///			for (var prX = projInx + 1; prX < ProjCount; ++prX)
+		///			{
+		///				var frame = new TrackingFrame(funded | ProjIds[prX]);
+		///				...
+		///			}
+		///	</code>
+		/// So I spent some time convincing myself that this is correct behavior and I am missing
+		/// no combination.  The algorithm in a sense has ProjCount + 1 projects, one of them is
+		/// not funding the project.
+		///
+		/// The algorithm recursively call fund the ProjCount + 1 projects the first of which is
+		/// don't fund the current project.
+		/// </summary>
 		private static void TryNextZeroOneDepth(int depth, int projInx, TrackingFrame parentFrame)
 		{
 			if (projInx + 1 >= ProjCount) return;
