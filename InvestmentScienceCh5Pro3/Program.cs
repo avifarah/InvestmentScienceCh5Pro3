@@ -130,7 +130,7 @@ namespace InvestmentScienceCh5Pro3
 		static void Main(string[] args)
 		{
 			// Skip projInx 0
-			TryNextZeroOneDepth(1, 1, 0, new TrackingFrame(0));
+			TryNextZeroOneDepth(1, 1, new TrackingFrame(0));
 
 			for (var pInx = 0; pInx < ProjCount; ++pInx)
 			{
@@ -140,7 +140,7 @@ namespace InvestmentScienceCh5Pro3
 				MaxNpv(frame);
 				Seen.Add(frame.Funded);
 
-				TryNextZeroOneDepth(1, pInx + 1, frame.Funded, frame);
+				TryNextZeroOneDepth(1, pInx + 1, frame);
 			}
 
 			// At this point it is impossible for having no funded project
@@ -151,14 +151,15 @@ namespace InvestmentScienceCh5Pro3
 				Console.WriteLine(fr.ToString());
 		}
 
-		private static void TryNextZeroOneDepth(int depth, int projInx, int funded, TrackingFrame parentFrame)
+		private static void TryNextZeroOneDepth(int depth, int projInx, TrackingFrame parentFrame)
 		{
 			if (projInx + 1 >= ProjCount) return;
 
 			// Skip funding projInx project
-			TryNextZeroOneDepth(depth + 1, projInx + 1, parentFrame.Funded, parentFrame);
+			TryNextZeroOneDepth(depth + 1, projInx + 1, parentFrame);
 
-			// Keep on adding all projects possible
+			// Keep on adding all possible projects before moving on
+			var funded = parentFrame.Funded;
 			for (var prX = projInx + 1; prX < ProjCount; ++prX)
 			{
 				var frame = new TrackingFrame(funded | ProjIds[prX]);
@@ -169,7 +170,7 @@ namespace InvestmentScienceCh5Pro3
 				MaxNpv(frame);
 				Seen.Add(frame.Funded);
 
-				TryNextZeroOneDepth(depth + 1, prX + 1, frame.Funded, frame);
+				TryNextZeroOneDepth(depth + 1, prX + 1, frame);
 			}
 		}
 	}
