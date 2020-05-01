@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace InvestmentScienceCh5Pro3
@@ -128,19 +129,18 @@ namespace InvestmentScienceCh5Pro3
 		/// <param name="args"></param>
 		static void Main(string[] args)
 		{
-			var level = 0;
-
 			// Skip projInx 0
-			TryNextZeroOneDepth(level, 1, 0, new TrackingFrame(0));
+			TryNextZeroOneDepth(1, 1, 0, new TrackingFrame(0));
 
 			for (var pInx = 0; pInx < ProjCount; ++pInx)
 			{
 				var frame = new TrackingFrame(ProjIds[pInx]);
+				//Console.WriteLine($"d:  0  pi: {pInx}  f: {string.Join(string.Empty, Enumerable.Reverse(Convert.ToString(frame.Funded, 2).ToCharArray()))}{new string('0', 7 - Convert.ToString(frame.Funded, 2).Length)}  s: {(Seen.Contains(frame.Funded) ? "s" : "-")}  c: {(Constraint(frame.Funded) ? "-" : "F")}");
 				if (!Constraint(frame.Funded)) continue;
 				MaxNpv(frame);
 				Seen.Add(frame.Funded);
 
-				TryNextZeroOneDepth(level, pInx + 1, frame.Funded, frame);
+				TryNextZeroOneDepth(1, pInx + 1, frame.Funded, frame);
 			}
 
 			// At this point it is impossible for having no funded project
@@ -151,25 +151,25 @@ namespace InvestmentScienceCh5Pro3
 				Console.WriteLine(fr.ToString());
 		}
 
-		private static void TryNextZeroOneDepth(int level, int projInx, int funded, TrackingFrame parentFrame)
+		private static void TryNextZeroOneDepth(int depth, int projInx, int funded, TrackingFrame parentFrame)
 		{
 			if (projInx + 1 >= ProjCount) return;
 
-			++level;
-
 			// Skip funding projInx project
-			TryNextZeroOneDepth(level, projInx + 1, funded, parentFrame);
+			TryNextZeroOneDepth(depth + 1, projInx + 1, parentFrame.Funded, parentFrame);
 
+			// Keep on adding all projects possible
 			for (var prX = projInx + 1; prX < ProjCount; ++prX)
 			{
 				var frame = new TrackingFrame(funded | ProjIds[prX]);
-				funded = frame.Funded;
+				//Console.WriteLine($"d: {depth,2}  pi: {prX}  f: {string.Join(string.Empty, Enumerable.Reverse(Convert.ToString(frame.Funded, 2).ToCharArray()))}{new string('0', 7 - Convert.ToString(frame.Funded, 2).Length)}  s: {(Seen.Contains(frame.Funded) ? "s" : "-")}  c: {(Constraint(frame.Funded) ? "-" : "F")}");
 				if (Seen.Contains(frame.Funded) || !Constraint(frame.Funded)) continue;
 
+				funded = frame.Funded;
 				MaxNpv(frame);
 				Seen.Add(frame.Funded);
 
-				TryNextZeroOneDepth(level, prX + 1, funded, frame);
+				TryNextZeroOneDepth(depth + 1, prX + 1, frame.Funded, frame);
 			}
 		}
 	}
